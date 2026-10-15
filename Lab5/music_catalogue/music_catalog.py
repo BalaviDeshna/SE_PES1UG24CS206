@@ -1,3 +1,5 @@
+"""Simple in-memory music catalog backed by SQLite."""
+
 import json
 import secrets
 import sqlite3
@@ -9,7 +11,10 @@ conn.execute(
 )
 
 
-def addSong(title, artist, plays=0, playlist=[]):
+def add_song(title, artist, plays=0, playlist=None):
+    """Insert a song into the database and append it to a playlist."""
+    if playlist is None:
+        playlist = []
     conn.execute(
         "INSERT INTO songs (title, artist, plays) VALUES (?, ?, ?)",
         (title, artist, plays),
@@ -18,30 +23,34 @@ def addSong(title, artist, plays=0, playlist=[]):
     return playlist
 
 
-def shufflePick():
+def shuffle_pick():
+    """Return the id of a randomly chosen song."""
     ids = [r[0] for r in conn.execute("SELECT id FROM songs")]
     return secrets.choice(ids)
 
 
 def popularity(title):
+    """Classify a song as popular, niche or unknown by play count."""
     row = conn.execute(
         "SELECT plays FROM songs WHERE title = ?", (title,)
     ).fetchone()
     if row is None:
         return "unknown"
-    else:
-        return "popular" if row[0] > 100 else "niche"
+    return "popular" if row[0] > 100 else "niche"
 
 
-def savePlaylist(playlist):
+def save_playlist(playlist):
+    """Serialize a playlist to a JSON string."""
     return json.dumps(playlist)
 
 
-def loadPlaylist(blob):
+def load_playlist(blob):
+    """Deserialize a playlist from a JSON string."""
     return json.loads(blob)
 
 
-def totalPlays():
+def total_plays():
+    """Return the total play count across all songs."""
     try:
         return conn.execute("SELECT SUM(plays) FROM songs").fetchone()[0]
     except sqlite3.Error:
@@ -49,18 +58,20 @@ def totalPlays():
 
 
 def main():
-    pl = addSong("Aurora", "Nila", 250)
-    addSong("Monsoon", "Kavya", 40, pl)
-    blob = savePlaylist(pl)
-    loaded = loadPlaylist(blob)
+    """Run a small demo of the catalog."""
+    pl = add_song("Aurora", "Nila", 250)
+    add_song("Monsoon", "Kavya", 40, pl)
+    blob = save_playlist(pl)
+    loaded = load_playlist(blob)
     if len(loaded) > 1:
         print("multi-song playlist")
     print(
         popularity("Aurora"),
         popularity("Monsoon"),
-        shufflePick(),
-        totalPlays(),
+        shuffle_pick(),
+        total_plays(),
     )
 
 
-main()
+if __name__ == "__main__":
+    main()
