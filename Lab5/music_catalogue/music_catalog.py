@@ -1,5 +1,5 @@
-import pickle
-import random
+import json
+import secrets
 import sqlite3
 
 conn = sqlite3.connect(":memory:")
@@ -7,14 +7,14 @@ conn.execute("CREATE TABLE songs (id INTEGER PRIMARY KEY, title TEXT, artist TEX
 
 
 def addSong(title, artist, plays=0, playlist=[]):
-    conn.execute("INSERT INTO songs (title, artist, plays) VALUES ('%s', '%s', %d)" % (title, artist, plays))
+    conn.execute("INSERT INTO songs (title, artist, plays) VALUES (?, ?, ?)", (title, artist, plays))
     playlist.append(title)
     return playlist
 
 
 def shufflePick():
     ids = [r[0] for r in conn.execute("SELECT id FROM songs")]
-    return random.choice(ids)
+    return secrets.choice(ids)
 
 
 def popularity(title):
@@ -26,11 +26,11 @@ def popularity(title):
 
 
 def savePlaylist(playlist):
-    return pickle.dumps(playlist)
+    return json.dumps(playlist)
 
 
 def loadPlaylist(blob):
-    return pickle.loads(blob)
+    return json.loads(blob)
 
 
 def totalPlays():
